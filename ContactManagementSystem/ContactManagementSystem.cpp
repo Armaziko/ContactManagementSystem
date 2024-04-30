@@ -26,7 +26,21 @@ public:
 	json readJSON() {
 		std::ifstream file("storage.json");
 		json data;
-		file >> data;
+
+		if (!file.is_open()) {
+			std::cerr << "Failed to open JSON file." << std::endl;
+			return json();
+		}
+
+		try {
+			file >> data;
+		}
+		catch (const std::exception& e) {
+			std::cerr << "Error reading JSON data: " << e.what() << std::endl;
+			
+			return json();
+		}
+
 		file.close();
 		return data;
 	}
@@ -66,13 +80,17 @@ public:
 		while (repeater) {
 			std::cout << "Add the email of the new contact: ";
 			std::cin >> conts.email;
-			if (conts.email.size() < 5) repeater = true;
-			else { repeater = false; break; }
 			int i = 0;
-			while (repeater) { if (conts.email[i] == '@') count++;}
-			if (count != 1) repeater = true;
-			else repeater = false;
+			while (repeater) {
+				if (i < conts.email.size() - 1 && conts.email[i] == '@') { count++; }
+				else if (i == conts.email.size() - 1) break;
+				i++;
+			}
+			if (count == 1) repeater = false;
+			else { repeater = true; std::cout << "Wrong e-mail!!! Try again!" << std::endl; }
+			if (conts.email.size() < 5) { repeater = true; std::cout << "Size of that emails is too small!"; }
 			std::cout << std::endl;
+			pauseScreen();
 		}
 		json newContact = {
 			{"name", conts.name},
@@ -80,15 +98,19 @@ public:
 			{"e-mail", conts.email}
 		};
 		json file = readJSON();
-		file["contacts"].push_back(newContact);
-		writeJSON(file);
+		if (!file.empty()) {
+			file["contacts"].push_back(newContact);
+			writeJSON(file);
 
-		std::cout << "New contact has been added. Do you want to see the updated contacts list? (0 for No, 1 for Yes): ";
-		int dial = -1;
-		while (dial != 0 && dial != 1) std::cin >> dial;
-		std::cout << std::endl;
-		if (dial == 1) drawList();
+			std::cout << "New contact has been added. Do you want to see the updated contacts list? (0 for No, 1 for Yes): ";
+			int dial = -1;
+			while (dial != 0 && dial != 1) std::cin >> dial;
+			std::cout << std::endl;
+			if (dial == 1) drawList();
+			else returnTo_mainMenu();
+		}
 		else returnTo_mainMenu();
+		
 
 	}
 	void editList() {
@@ -125,7 +147,6 @@ public:
 		std::cout << "Do you want to get back to the main menu?(0 for No, 1 for Yes): ";
 		dial = -1;
 		while (dial != 0 && dial != 1) std::cin >> dial;
-
 		if (dial == 1) mainMenu();
 		exitApp();
 	}
@@ -150,12 +171,11 @@ public:
 		pauseScreen();
 	}
 };
-
-
 int main()
 {
 	CMS* cms = new CMS;
 	cms->mainMenu();
 	delete cms;
 }
+
 
